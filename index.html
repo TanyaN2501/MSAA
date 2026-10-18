@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSAA Visualizer | Комп'ютерна графіка</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+
+<header class="header">
+    <div class="container header-content">
+        <div class="logo">◈ MSAA <span>Visualizer</span></div>
+        <a href="#theory">Про алгоритм ↓</a>
+    </div>
+</header>
+
+<main class="container">
+
+    <section class="hero">
+        <p class="eyebrow">
+            КОМП'ЮТЕРНА ГРАФІКА · ІНТЕРАКТИВНА ЛАБОРАТОРІЯ
+        </p>
+
+        <h1>
+            Згладжування контурів
+            <span>методом мультисемплінгу</span>
+        </h1>
+
+        <p>
+            Досліджуйте алгоритм MSAA у реальному часі.
+            Порівнюйте растеризацію графічних об'єктів,
+            змінюйте кількість семплів і спостерігайте,
+            як формується колір граничних пікселів.
+        </p>
+    </section>
+
+    <section class="workspace">
+
+        <aside class="panel controls">
+            <h2>Налаштування сцени</h2>
+
+            <label for="shape">Графічний об'єкт</label>
+            <select id="shape">
+                <option value="triangle">Трикутник</option>
+                <option value="circle">Коло</option>
+                <option value="star">Зірка</option>
+                <option value="line">Діагональна смуга</option>
+            </select>
+
+            <label for="samples">Кількість семплів</label>
+            <select id="samples">
+                <option value="1">1× — без згладжування</option>
+                <option value="2">2× MSAA</option>
+                <option value="4">4× MSAA</option>
+                <option value="8">8× MSAA</option>
+                <option value="16" selected>16× MSAA</option>
+                <option value="64">64× MSAA</option>
+            </select>
+
+            <label for="angle">
+                Поворот:
+                <span id="angleValue">0°</span>
+            </label>
+            <input type="range" id="angle"
+                   min="-60" max="60" value="0">
+
+            <label for="zoom">
+                Масштаб контуру:
+                <span id="zoomValue">8×</span>
+            </label>
+            <input type="range" id="zoom"
+                   min="2" max="12" value="8">
+
+            <div class="color-row">
+                <div>
+                    <label for="figureColor">Колір фігури</label>
+                    <input type="color" id="figureColor"
+                           value="#6857e6">
+                </div>
+
+                <div>
+                    <label for="backgroundColor">Колір фону</label>
+                    <input type="color" id="backgroundColor"
+                           value="#f3f1ff">
+                </div>
+            </div>
+
+            <button id="downloadBtn" class="primary-btn">
+                ↓ Зберегти результат PNG
+            </button>
+
+            <button id="resetBtn" class="secondary-btn">
+                Скинути налаштування
+            </button>
+
+            <p class="control-note">
+                Алгоритм перевіряє кілька точок усередині
+                кожного пікселя та усереднює його колір.
+            </p>
+        </aside>
+
+        <div class="panel results">
+
+            <div class="section-heading">
+                <h2>Порівняння результатів</h2>
+                <span class="status" id="status">
+                    16 семплів/піксель
+                </span>
+            </div>
+
+            <div class="canvas-grid">
+                <div class="canvas-card">
+                    <div class="canvas-title">
+                        <h3>Без згладжування</h3>
+                        <span>1 семпл</span>
+                    </div>
+                    <canvas id="canvasBefore"
+                            width="160" height="120"></canvas>
+                </div>
+
+                <div class="canvas-card">
+                    <div class="canvas-title">
+                        <h3>З мультисемплінгом</h3>
+                        <span id="samplesLabel">16 семплів</span>
+                    </div>
+                    <canvas id="canvasAfter"
+                            width="160" height="120"></canvas>
+                </div>
+            </div>
+
+            <div class="statistics">
+                <p>
+                    Час обчислення:
+                    <strong id="renderTime">—</strong>
+                </p>
+                <p>
+                    Перевірено семплів:
+                    <strong id="sampleCount">—</strong>
+                </p>
+            </div>
+
+            <div class="zoom-section">
+                <h3>Збільшення контуру</h3>
+                <p>
+                    Збільшено ділянку межі фігури.
+                    Зверни увагу на проміжні відтінки
+                    кольору справа.
+                </p>
+
+                <div class="canvas-grid">
+                    <div class="canvas-card">
+                        <h4>Без MSAA</h4>
+                        <canvas id="zoomBefore"
+                                width="320" height="200"></canvas>
+                    </div>
+
+                    <div class="canvas-card">
+                        <h4>З MSAA</h4>
+                        <canvas id="zoomAfter"
+                                width="320" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sampling-section">
+                <div class="sampling-heading">
+                    <div>
+                        <h3>Як працює семплінг?</h3>
+                        <p>
+                            Точки всередині одного граничного пікселя
+                        </p>
+                    </div>
+
+                    <span class="status" id="coverageLabel">
+                        Покриття: —
+                    </span>
+                </div>
+
+                <div class="sampling-layout">
+                    <canvas id="sampleCanvas"
+                            width="300" height="300"></canvas>
+
+                    <div class="sampling-info">
+                        <h4>Аналіз пікселя</h4>
+
+                        <p>
+                            Координати:
+                            <strong id="pixelPosition">—</strong>
+                        </p>
+
+                        <p>
+                            Семплів усередині фігури:
+                            <strong id="coveredCount">—</strong>
+                        </p>
+
+                        <p>
+                            Загальна кількість:
+                            <strong id="totalSamples">—</strong>
+                        </p>
+
+                        <p>
+                            Підсумковий колір:
+                            <span id="resultColor"
+                                  class="color-preview"></span>
+                        </p>
+
+                        <p class="sampling-note">
+                            Фіолетові точки належать фігурі,
+                            світлі - розташовані поза нею.
+                            Лінія показує приблизне проходження
+                            контуру через піксель.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="theory" id="theory">
+        <p class="eyebrow">ТЕОРЕТИЧНА ЧАСТИНА</p>
+        <h2>Як працює мультисемплінг?</h2>
+
+        <div class="theory-grid">
+            <article>
+                <span>01</span>
+                <h3>Вибірка точок</h3>
+                <p>
+                    Усередині пікселя розміщується
+                    декілька точок вибірки.
+                </p>
+            </article>
+
+            <article>
+                <span>02</span>
+                <h3>Перевірка покриття</h3>
+                <p>
+                    Для кожної точки визначається,
+                    чи належить вона графічному об'єкту.
+                </p>
+            </article>
+
+            <article>
+                <span>03</span>
+                <h3>Усереднення кольору</h3>
+                <p>
+                    Колір пікселя обчислюється
+                    пропорційно кількості покритих семплів.
+                </p>
+            </article>
+        </div>
+
+        <div class="formula">
+            C = (k / N) × C<sub>фігури</sub>
+            + (1 − k / N) × C<sub>фону</sub>
+        </div>
+
+        <p class="theory-note">
+            Даний вебзастосунок реалізує програмну модель
+            мультисемплінгу покриття для двовимірних
+            одноколірних графічних примітивів.
+            Це навчальна демонстрація принципу MSAA.
+        </p>
+    </section>
+
+</main>
+
+<footer>
+    MSAA Visualizer · Курсовий проєкт із комп'ютерної графіки
+</footer>
+
+</body>
+</html>
